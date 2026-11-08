@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123c32">
+<title>اربح معنا</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#123c32;--green2:#205b49;--gold:#d7ad55;--bg:#f3f6f4;--ink:#18231e;--muted:#68766f;--line:#e2e9e4;--white:#fff;--red:#b83b3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(135deg,var(--green),var(--green2));color:white;padding:22px 16px 26px;border-radius:0 0 24px 24px}
+.wrap{max-width:900px;margin:auto;padding:0 14px}header h1{margin:0;font-size:27px}header p{margin:8px 0 0;color:#e5eee8;font-size:14px}
+main{max-width:900px;margin:18px auto;padding:0 14px}.card{background:white;border:1px solid var(--line);border-radius:17px;padding:17px;margin-bottom:14px;box-shadow:0 5px 18px #153b2b0a}
+h2{font-size:19px;margin:0 0 14px;color:var(--green)}h3{font-size:16px;margin:0 0 10px}
+label{display:block;font-size:13px;margin:10px 0 6px;color:#46564d}input,select,button{font:inherit}input,select{width:100%;padding:12px;border:1px solid #d7e1da;border-radius:10px;background:#fff;outline:none}input:focus,select:focus{border-color:var(--green2)}
+button{border:0;border-radius:10px;padding:12px 15px;background:var(--green);color:white;cursor:pointer;font-weight:bold}button.secondary{background:#edf3ef;color:var(--green)}button.gold{background:var(--gold);color:#30250e}button.danger{background:#fff0f0;color:var(--red)}button:disabled{opacity:.55;cursor:wait}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.muted{color:var(--muted);font-size:13px}.notice{padding:11px;border-radius:10px;background:#fff8e8;color:#72551b;font-size:13px;margin-bottom:12px}
+.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:#f4f8f5;border-radius:12px;padding:13px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:21px;color:var(--green);margin-top:5px;overflow-wrap:anywhere}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:right;padding:10px 7px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:normal}
+#message{position:sticky;top:5px;z-index:5;padding:10px 13px;border-radius:10px;margin-bottom:12px;background:#e8f3ec;color:var(--green);display:none}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px}.tabs button{white-space:nowrap;padding:10px 13px}.tabs button.active{background:var(--gold);color:#30250e}
+footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+@media(max-width:520px){.row{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.card{padding:14px}header h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>اربح معنا</h1><p>محفظتك المالية — الدولار والليرة السورية</p></div></header>
+<main>
+<div id="message"></div>
+<div id="setup" class="card">
+<h2>إعداد الاتصال</h2>
+<div class="notice">هذا الملف يحتاج رابط مشروع Supabase ومفتاح anon العام حتى يعمل تسجيل الدخول والمحافظ. لا تضع مفتاح service_role هنا أبداً.</div>
+<label>رابط مشروع Supabase</label><input id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+<label>مفتاح anon / publishable العام</label><input id="supabaseKey" placeholder="المفتاح العام فقط">
+<div class="actions"><button id="saveConfig">حفظ الاتصال على هذا الجهاز</button></div>
+<p class="muted">الإعداد يُحفظ في المتصفح على جهازك فقط.</p>
+</div>
+
+<section id="auth" class="card hidden">
+<h2 id="authTitle">تسجيل الدخول</h2>
+<div id="nameField" class="hidden"><label>الاسم الكامل</label><input id="fullName" autocomplete="name"></div>
+<label>رقم الهاتف أو البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" placeholder="البريد الإلكتروني">
+<label>كلمة المرور</label><input id="password" type="password" autocomplete="current-password">
+<div class="actions"><button id="loginBtn">دخول</button><button class="secondary" id="registerBtn">إنشاء حساب</button></div>
+<p class="muted">إنشاء الحساب يتطلب بريداً إلكترونياً صالحاً. قد يطلب Supabase تأكيد البريد.</p>
+</section>
+
+<section id="app" class="hidden">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h2 style="margin-bottom:4px">مرحباً بك</h2><div id="userName" class="muted"></div></div><button class="secondary" id="logoutBtn">تسجيل الخروج</button></div>
+<div class="stats" style="margin-top:15px">
+<div class="stat"><small>رصيد الدولار</small><strong id="usdBalance">$0.00</strong></div>
+<div class="stat"><small>رصيد الليرة السورية</small><strong id="sypBalance">0 ل.س</strong></div>
+</div>
+</div>
+<div class="tabs">
+<button class="active" data-tab="deposit">إيداع</button><button data-tab="withdraw">سحب</button><button data-tab="history">الحركات</button><button data-tab="profits">الأرباح</button><button id="adminTab" data-tab="admin" class="hidden">الإدارة</button>
+</div>
+<div id="deposit" class="card tabPanel"><h2>طلب إيداع</h2><label>المبلغ</label><input id="depAmount" type="number" min="0.01" step="0.01"><label>العملة</label><select id="depCurrency"><option value="USD">دولار أمريكي</option><option value="SYP">ليرة سورية</option></select><label>طريقة التحويل / ملاحظات</label><input id="depMethod" placeholder="مثال: شام كاش أو حوالة"><div class="actions"><button id="depositBtn">إرسال طلب الإيداع</button></div><p class="muted">لن يضاف المبلغ إلى رصيدك إلا بعد مراجعة الإدارة والموافقة.</p></div>
+<div id="withdraw" class="card tabPanel hidden"><h2>طلب سحب</h2><label>المبلغ</label><input id="withAmount" type="number" min="0.01" step="0.01"><label>العملة</label><select id="withCurrency"><option value="USD">دولار أمريكي</option><option value="SYP">ليرة سورية</option></select><label>طريقة الاستلام وبيانات التحويل</label><input id="withMethod" placeholder="اكتب طريقة الاستلام والرقم"><div class="actions"><button id="withdrawBtn">إرسال طلب السحب</button></div><p class="muted">الطلب يبقى قيد المراجعة حتى موافقة الإدارة.</p></div>
+<div id="history" class="card tabPanel hidden"><h2>سجل الحركات</h2><div id="historyList" class="muted">لا توجد حركات للعرض.</div></div>
+<div id="profits" class="card tabPanel hidden"><h2>الأرباح المعتمدة</h2><div id="profitsList" class="muted">لا توجد أرباح معتمدة حالياً.</div></div>
+<div id="admin" class="card tabPanel hidden"><h2>طلبات الإدارة</h2><div id="adminList" class="muted">لا توجد طلبات أو ليست لديك صلاحية الإدارة.</div></div>
+</section>
+</main>
+<footer>اربح معنا © <span id="year"></span></footer>
+<script>
+const $=id=>document.getElementById(id);
+let sb=null, currentUser=null, currentProfile=null;
+$("year").textContent=new Date().getFullYear();
+function msg(t,bad=false){$("message").textContent=t;$("message").style.display="block";$("message").style.background=bad?"#fff0f0":"#e8f3ec";$("message").style.color=bad?"#a22": "var(--green)";window.scrollTo({top:0,behavior:"smooth"});}
+function config(){return {url:localStorage.getItem("erbah_supabase_url")||"",key:localStorage.getItem("erbah_supabase_key")||""};}
+function connect(){const c=config();if(!c.url||!c.key)return false;try{sb=window.supabase.createClient(c.url,c.key);return true}catch(e){msg("تعذر إعداد الاتصال. تحقق من الرابط والمفتاح.",true);return false;}}
+function showAuth(){ $("setup").classList.add("hidden");$("auth").classList.remove("hidden");$("app").classList.add("hidden");}
+function showApp(){ $("setup").classList.add("hidden");$("auth").classList.add("hidden");$("app").classList.remove("hidden");}
+$("saveConfig").onclick=()=>{const u=$("supabaseUrl").value.trim(),k=$("supabaseKey").value.trim();if(!u.startsWith("https://")||!k){msg("أدخل رابط Supabase والمفتاح العام بشكل صحيح.",true);return;}localStorage.setItem("erbah_supabase_url",u);localStorage.setItem("erbah_supabase_key",k);if(connect()){msg("تم حفظ إعداد الاتصال. يمكنك تسجيل الدخول أو إنشاء حساب.");showAuth();}};
+const c=config();$("supabaseUrl").value=c.url;$("supabaseKey").value=c.key;
+$("registerBtn").onclick=async()=>{ $("authTitle").textContent="إنشاء حساب جديد";$("nameField").classList.remove("hidden");$("loginBtn").classList.add("hidden");$("registerBtn").textContent="تأكيد إنشاء الحساب";$("registerBtn").onclick=register;};
+async function register(){const email=$("email").value.trim(),password=$("password").value,name=$("fullName").value.trim();if(!email||password.length<6||!name){msg("أدخل الاسم والبريد وكلمة مرور من 6 أحرف على الأقل.",true);return;}const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});if(error){msg(error.message,true);return;}msg("تم إرسال طلب إنشاء الحساب. إذا طُلب تأكيد البريد، افتح رسالة Supabase ثم ارجع لتسجيل الدخول.");$("authTitle").textContent="تسجيل الدخول";$("nameField").classList.add("hidden");$("loginBtn").classList.remove("hidden");$("registerBtn").textContent="إنشاء حساب";$("registerBtn").onclick=()=>{$("authTitle").textContent="إنشاء حساب جديد";$("nameField").classList.remove("hidden");$("loginBtn").classList.add("hidden");$("registerBtn").textContent="تأكيد إنشاء الحساب";$("registerBtn").onclick=register;};}
+$("loginBtn").onclick=async()=>{const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){msg("تعذر تسجيل الدخول: "+error.message,true);return;}currentUser=data.user;await loadDashboard();};
+$("logoutBtn").onclick=async()=>{await sb.auth.signOut();currentUser=null;showAuth();msg("تم تسجيل الخروج.");};
+async function loadDashboard(){if(!currentUser)return;showApp();$("userName").textContent=currentUser.email||"";const {data:p,error:pe}=await sb.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();if(pe){msg("تعذر قراءة الملف الشخصي: "+pe.message,true);return;}currentProfile=p||{};$("userName").textContent=(p&&p.full_name)||currentUser.email||"";
+const {data:w,error:we}=await sb.from("wallets").select("*").eq("user_id",currentUser.id).maybeSingle();if(we){msg("تعذر قراءة المحفظة: "+we.message,true);return;} $("usdBalance").textContent="$"+Number(w?.balance_usd||0).toFixed(2);$("sypBalance").textContent=Number(w?.balance_syp||0).toLocaleString("en-US")+" ل.س";
+if(p?.role==="admin"){$("adminTab").classList.remove("hidden");}else{$("adminTab").classList.add("hidden");}
+await loadHistory();await loadProfits();if(p?.role==="admin")await loadAdmin();}
+document.querySelectorAll(".tabs button[data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tabPanel").forEach(x=>x.classList.add("hidden"));$(b.dataset.tab).classList.remove("hidden");});
+async function submitRequest(table,amountId,currencyId,methodId){const amount=Number($(amountId).value),currency=$(currencyId).value,method=$(methodId).value.trim();if(!(amount>0)||!method){msg("أدخل مبلغاً صحيحاً وبيانات التحويل.",true);return;}const payload={user_id:currentUser.id,amount,currency,status:"pending"};if(table==="deposit_requests")payload.description=method;else payload.description=method;const {error}=await sb.from(table).insert(payload);if(error){msg("لم يتم إرسال الطلب: "+error.message,true);return;}$(amountId).value="";$(methodId).value="";msg("تم إرسال الطلب بنجاح، وهو الآن قيد المراجعة.");}
+$("depositBtn").onclick=()=>submitRequest("deposit_requests","depAmount","depCurrency","depMethod");
+$("withdrawBtn").onclick=()=>submitRequest("withdrawal_requests","withAmount","withCurrency","withMethod");
+async function loadHistory(){const {data,error}=await sb.from("wallet_transactions").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(30);if(error){$("historyList").textContent="تعذر تحميل الحركات: "+error.message;return;}if(!data?.length){$("historyList").textContent="لا توجد حركات مسجلة حتى الآن.";return;}$("historyList").innerHTML="<table><tr><th>النوع</th><th>المبلغ</th><th>التاريخ</th></tr>"+data.map(x=>`<tr><td>${esc(x.transaction_type||"حركة")}</td><td>${Number(x.amount||0).toLocaleString("en-US")} ${esc(x.currency||"")}</td><td>${date(x.created_at)}</td></tr>`).join("")+"</table>";}
+async function loadProfits(){const {data,error}=await sb.from("profit_distributions").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error){$("profitsList").textContent="تعذر تحميل الأرباح: "+error.message;return;}if(!data?.length){$("profitsList").textContent="لا توجد أرباح معتمدة حالياً.";return;}$("profitsList").innerHTML="<table><tr><th>المبلغ</th><th>العملة</th><th>التاريخ</th></tr>"+data.map(x=>`<tr><td>${Number(x.amount||0).toLocaleString("en-US")}</td><td>${esc(x.currency||"")}</td><td>${date(x.created_at)}</td></tr>`).join("")+"</table>";}
+async function loadAdmin(){const a=[];for(const t of ["deposit_requests","withdrawal_requests"]){const {data,error}=await sb.from(t).select("*").eq("status","pending").order("created_at",{ascending:true}).limit(50);if(error){$("adminList").textContent="تعذر تحميل الطلبات: "+error.message;return;}for(const x of (data||[]))a.push({...x,_table:t});}if(!a.length){$("adminList").textContent="لا توجد طلبات معلقة.";return;}$("adminList").innerHTML=a.map(x=>`<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:9px 0"><b>${x._table==="deposit_requests"?"طلب إيداع":"طلب سحب"}</b><p class="muted">المستخدم: ${esc(x.user_id)}<br>المبلغ: ${Number(x.amount)} ${esc(x.currency)}<br>التاريخ: ${date(x.created_at)}<br>${esc(x.description||"")}</p><div class="actions"><button data-approve="${x.id}" data-table="${x._table}">موافقة</button><button class="danger" data-reject="${x.id}" data-table="${x._table}">رفض</button></div></div>`).join("");$("adminList").querySelectorAll("[data-approve]").forEach(b=>b.onclick=()=>adminDecision(b.dataset.table,b.dataset.approve,"approved"));$("adminList").querySelectorAll("[data-reject]").forEach(b=>b.onclick=()=>adminDecision(b.dataset.table,b.dataset.reject,"rejected"));}
+async function adminDecision(table,id,status){if(!confirm(status==="approved"?"تأكيد الموافقة؟ تأكد من أن إجراء تحديث الرصيد مضبوط في قاعدة البيانات.":"تأكيد رفض الطلب؟"))return;const {error}=await sb.from(table).update({status}).eq("id",id);if(error){msg("تعذر تحديث الطلب: "+error.message,true);return;}msg("تم تحديث حالة الطلب. تأكد من أن قاعدة البيانات تنفذ تحديث الرصيد عند الموافقة.");await loadAdmin();}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function date(s){return s?new Date(s).toLocaleDateString("ar"): "—";}
+(async()=>{if(connect()){const {data}=await sb.auth.getSession();if(data.session){currentUser=data.session.user;await loadDashboard();}else showAuth();}})();
+</script>
+</body></html>
